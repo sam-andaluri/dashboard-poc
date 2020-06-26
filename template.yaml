@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Severless Dashboard generator
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: dashboard-poc
+    Description: Generic EC2, EBS, ELB Dashboards with Quotas and PHD integration
+    Author: Sam Andaluri
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: license.txt
+    ReadmeUrl: README.md
+    Labels: ['cloudwatch']
+    HomePageUrl: https://github.com/sam-andaluri/dashboard-poc
+    SemanticVersion: 0.1.0
+    SourceCodeUrl: https://github.com/sam-andaluri/dashboard-poc
+
+Parameters:
+  QuotaUpdateInterval:
+    Type: String
+    Default: "rate(7 days)"
+    Description: (Required) Schedule interval to update quotas (limits) on accounts. Default once a week.
+  HealthUpdateInterval:
+    Type: String
+    Default: "rate(1 day)"
+    Description: (Required) Schedule interval to update health events on account. Default once a day.
+  SummaryDashboardInterval:
+    Type: String
+    Default: "rate(30 minutes)"
+    Description: (Required) Schedule interval to update summary dashboard that shows number of EC2, EBS and ELB resource. Default every 30 minutes.
+  QSExportInterval:
+    Type: String
+    Default: "rate(5 minutes)"
+    Description: (Required) Schedule interval to update QuickSight dashboard that shows selected stats for production resource. Default every 5 minutes.
+  CloudWatchQuickSight:
+    Type: String
+    Description: S3 bucket for storing CloudWatch stats to display in QuickSight
+  ProvisionAlarms:
+    Type: String
+    Default: "YES"
+    AllowedValues:
+      - "YES"
+      - "NO"
+    Description: Add alarms for EC2, EBS and ELB. Default YES.
+  AlarmTopic:
+    Type: String
+    Default: "customer-operations"
+    Description: SNS Topic for alarm notifications.
+  AlarmEmail:
+    Type: String
+    Default: "ops@email.com"
+    Description: Email where the alarms are sent.
+
+Resources:
+  CW_QS_S3:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref CloudWatchQuickSight
+
+  Quotas:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      CodeUri: ./quotas
+      Description: 'Display service quotas for selected services'
+      MemorySize: 128
+      Timeout: 60
+      Policies:
+        - CloudWatchFullAccess
+      Environment:
+        Variables:
+          ACCOUNT_ID: {AWS::AccountId}
+      Events:
+        MainInterval:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref QuotaUpdateInterval
+
+  Health:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      CodeUri: ./health
+      Description: 'Display all health events for a given account'
+      MemorySize: 128
+      Timeout: 60
+      Policies:
+        - CloudWatchFullAccess
+      Environment:
+        Variables:
+          ACCOUNT_ID: {AWS::AccountId}
+      Events:
+        MainInterval:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref HealthUpdateInterval
+
+  QSExport:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      CodeUri: ./qsexport
+      Description: 'Export stats for production workloads to S3 for QuickSight'
+      MemorySize: 128
+      Timeout: 60
+      Policies:
+        - CloudWatchFullAccess
+      Environment:
+        Variables:
+          ACCOUNT_ID: {AWS::AccountId}
+      Events:
+        MainInterval:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref QSExportInterval
+
+  Summary:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      CodeUri: ./summary
+      Description: 'Display service quotas for selected services'
+      MemorySize: 128
+      Timeout: 60
+      Policies:
+        - CloudWatchFullAccess
+      Environment:
+        Variables:
+          ACCOUNT_ID: {AWS::AccountId}
+      Events:
+        MainInterval:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref SummaryDashboardInterval
