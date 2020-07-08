@@ -2,7 +2,7 @@ import boto3
 import json
 import os
 
-quotasMd = """\n\n#Demo Dashboard - Quotas\n\nServiceCode | ServiceName | QuotaName | Value | Adjustable | Global\n------|------|------|------|------|------\n"""
+quotasMd = """# Demo Dashboard - Quotas\n\nServiceCode | ServiceName | QuotaName | Value | Adjustable | Global\n------|------|------|------|------|------\n"""
 quotaRowMd = """%s | %s | %s | %s | %s | %s\n"""
 quotasDashboard = """
 {
