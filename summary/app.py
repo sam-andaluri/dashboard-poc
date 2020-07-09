@@ -159,19 +159,27 @@ def lambda_handler(event, context):
             if (len(stateCount) > 0):
                 rootDashboardMd += rootDashboardDynamicRegion % regionName
                 rootDashboardMd += rootDashboardDynamicTableHead
-                urlRunning = generateNumInstURLMd("ec2", regionName, "running", stateCount['running'])
-                urlStopped = generateNumInstURLMd("ec2", regionName, "stopped", stateCount['stopped'])
+                if 'running' in stateCount.keys():
+                    urlRunning = generateNumInstURLMd("ec2", regionName, "running", stateCount['running'])
+                else:
+                    urlRunning = "0"
+                if 'stopped' in stateCount.keys():
+                    urlStopped = generateNumInstURLMd("ec2", regionName, "stopped", stateCount['stopped'])
+                else:
+                    urlStopped = "0"
                 rootDashboardMd += rootDashboardDynamicTableRow % (urlRunning, urlStopped)
             if (len(markdownDict) > 0):
-                runningInstancesJson = instancesInStateMd % "running".capitalize()
-                runningInstancesJson += markdownDict['running']
-                stoppedInstancesJson = instancesInStateMd % "stopped".capitalize()
-                stoppedInstancesJson += markdownDict['stopped']
                 instanceDashboardJson = json.loads(instancesInState, strict=False)
-                instanceDashboardJson['widgets'][0]['properties']['markdown'] = runningInstancesJson
-                cw.put_dashboard(DashboardName="ec2-%s-running" % regionName, DashboardBody=json.dumps(instanceDashboardJson))
-                instanceDashboardJson['widgets'][0]['properties']['markdown'] = stoppedInstancesJson
-                cw.put_dashboard(DashboardName="ec2-%s-stopped" % regionName, DashboardBody=json.dumps(instanceDashboardJson))
+                if 'running' in markdownDict.keys():
+                    runningInstancesJson = instancesInStateMd % "running".capitalize()
+                    runningInstancesJson += markdownDict['running']
+                    instanceDashboardJson['widgets'][0]['properties']['markdown'] = runningInstancesJson
+                    cw.put_dashboard(DashboardName="ec2-%s-running" % regionName, DashboardBody=json.dumps(instanceDashboardJson))
+                if 'stopped' in markdownDict.keys():
+                    stoppedInstancesJson = instancesInStateMd % "stopped".capitalize()
+                    stoppedInstancesJson += markdownDict['stopped']
+                    instanceDashboardJson['widgets'][0]['properties']['markdown'] = stoppedInstancesJson
+                    cw.put_dashboard(DashboardName="ec2-%s-stopped" % regionName, DashboardBody=json.dumps(instanceDashboardJson))
     rootDashboardJson = json.loads(rootDashboard, strict=False)
     rootDashboardJson['widgets'][0]['properties']['markdown'] = rootDashboardMd
     cw.put_dashboard(DashboardName="main-dashboard", DashboardBody=json.dumps(rootDashboardJson))
