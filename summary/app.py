@@ -1,5 +1,8 @@
 import boto3
 import json
+from pytz import timezone
+from datetime import datetime
+import os
 
 rootDashboard="""
 {
@@ -18,10 +21,14 @@ rootDashboard="""
 }
 """
 
-rootDashboardMd = """\n# Dashboard\n\n"""
+accountId = os.environ['ACCOUNT_ID']
+dateInUTC = datetime.now(timezone('UTC'))
+dashboardDate = dateInUTC.strftime("%m/%d/%Y %H:%M:%S %Z")
+rootDashboardMd = """\n# Dashboard\n\n### Last Updated: """ + dashboardDate + """\n\n """
 rootDashboardDynamicRegion = """\n\n## Region %s\n\n"""
 rootDashboardDynamicTableHead = """\n### EC2\nInstance State | Count\n----|-----"""
 rootDashboardDynamicTableRow = """\nRunning | %s\nStopped | %s\n"""
+rootDashboardFootNote = """\n\n## Other Links\n\n Dashboard Type | Link\n----|-----\nQuotas | [Quotas](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=%s-quotas)\nPhd | [Phd](https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=%s-phd)\n"""
 
 instancesInState="""
 {
@@ -180,6 +187,7 @@ def lambda_handler(event, context):
                     stoppedInstancesJson += markdownDict['stopped']
                     instanceDashboardJson['widgets'][0]['properties']['markdown'] = stoppedInstancesJson
                     cw.put_dashboard(DashboardName="ec2-%s-stopped" % regionName, DashboardBody=json.dumps(instanceDashboardJson))
+    rootDashboardMd += (rootDashboardFootNote % (accountId, accountId))
     rootDashboardJson = json.loads(rootDashboard, strict=False)
     rootDashboardJson['widgets'][0]['properties']['markdown'] = rootDashboardMd
     cw.put_dashboard(DashboardName="main-dashboard", DashboardBody=json.dumps(rootDashboardJson))
