@@ -108,6 +108,9 @@ Resources:
       Timeout: 60
       Policies:
         - CloudWatchFullAccess
+      Environment:
+        Variables:
+          ACCOUNT_ID: {AWS::AccountId}
       Events:
         MainInterval:
           Type: Schedule

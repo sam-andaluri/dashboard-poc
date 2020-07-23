@@ -3,10 +3,36 @@ from datetime import date
 from pandas import DataFrame
 import boto3
 import json
+import os
 
-def lambda_handler(event, context):
+s3 = boto3.client(service_name='s3')
+
+def phdExport():
+    phd = boto3.client(service_name='health')
+    response = phd.describe_events()
+    data = DataFrame()
+    for event in response['events']:
+        endTime=""
+        if 'endTime' in event:
+            endTime = event['endTime']
+        else:
+            endTime = "None"
+        data = data.append({'arn':event['arn'],
+                     'service':event['service'],
+                     'eventTypeCode':event['eventTypeCode'],
+                     'eventTypeCategory':event['eventTypeCategory'],
+                     'region':event['region'],
+                     'startTime':event['startTime'],
+                     'endTime':endTime,
+                     'lastUpdatedTime':event['lastUpdatedTime'],
+                     'statusCode':event['statusCode']
+                     }, ignore_index=True)
+    phdFile = "%s-phd.csv" % os.environ['ACCOUNT_ID']
+    data.to_csv("/tmp/%s" % phdFile, index=False)
+    s3.upload_file("/tmp/%s" % phdFile, 'aig-cw-qs', phdFile)
+
+def metricsExport():
     dateToday = date.today()
-    s3 = boto3.client(service_name='s3')
     cw = boto3.client(service_name='cloudwatch')
     metricDataQuery = """
     [
@@ -65,5 +91,7 @@ def lambda_handler(event, context):
         s3.upload_file("/tmp/%s" % qsExportFile, 'aig-cw-qs', qsExportFile)
 
 
-
+def lambda_handler(event, context):
+    metricsExport()
+    phdExport()
 
