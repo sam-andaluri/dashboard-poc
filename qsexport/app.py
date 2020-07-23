@@ -6,7 +6,10 @@ import json
 import os
 
 s3 = boto3.client(service_name='s3')
-
+orgs = boto3.client('organizations')
+accountId = os.environ['ACCOUNT_ID']
+accountResp = orgs.describe_account(AccountId=accountId)
+accountName = accountResp['Account']['Name']
 def phdExport():
     phd = boto3.client(service_name='health')
     response = phd.describe_events()
@@ -17,7 +20,10 @@ def phdExport():
             endTime = event['endTime']
         else:
             endTime = "None"
-        data = data.append({'arn':event['arn'],
+        data = data.append({
+                     'accountId':accountId,
+                     'accountName':accountName,
+                     'arn':event['arn'],
                      'service':event['service'],
                      'eventTypeCode':event['eventTypeCode'],
                      'eventTypeCategory':event['eventTypeCategory'],
@@ -27,7 +33,7 @@ def phdExport():
                      'lastUpdatedTime':event['lastUpdatedTime'],
                      'statusCode':event['statusCode']
                      }, ignore_index=True)
-    phdFile = "%s-phd.csv" % os.environ['ACCOUNT_ID']
+    phdFile = "%s-phd.csv" % accountId
     data.to_csv("/tmp/%s" % phdFile, index=False)
     s3.upload_file("/tmp/%s" % phdFile, 'aig-cw-qs', phdFile)
 
