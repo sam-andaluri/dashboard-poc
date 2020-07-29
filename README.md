@@ -3,12 +3,13 @@
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
 
 - health - Code for integrating Personal Health events and full description of the event. 
-- qsexport - Code for exporting CloudWatch metrics to S3 for external dashboards.
+- qsexport - Code for exporting CloudWatch metrics and PHD events to S3 for external dashboards.
 - quotas - Code for generating a table with all the limits or quotas for services in an account.
 - summary - Code for generating a dashboard which lists all EC2 instances and their metrics. 
+- alarms - Code for generating alarms with specific thresholds for resources across all regions in an account.
 - template.yaml - A template that defines the application's AWS resources.
 
-## Dashboard Architecture
+## Centralized Monitoring Architecture
 
 ![Dashboard architecture](images/dashboardarch.png)
 
@@ -17,6 +18,10 @@ This project contains source code and supporting files for a serverless applicat
 For Cross Account and Cross Region access, please refer to the [documentation](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/Cross-Account-Cross-Region.html).
 
 ## Serverless Application 
+
+### Application Architecture
+
+![Dashboard SAM architecture](images/dashboard-poc.png)
 
 The application uses several AWS resources. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 

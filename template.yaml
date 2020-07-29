@@ -32,6 +32,10 @@ Parameters:
     Type: String
     Default: "rate(5 minutes)"
     Description: (Required) Schedule interval to update QuickSight dashboard that shows selected stats for production resource. Default every 5 minutes.
+  AlarmConfigInterval:
+    Type: String
+    Default: "rate(5 minutes)"
+    Description: (Required) Schedule interval to check for new alarm configuration. Default every 5 minutes.
   CloudWatchQuickSight:
     Type: String
     Description: S3 bucket for storing CloudWatch stats to display in QuickSight
