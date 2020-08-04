@@ -61,6 +61,36 @@ Resources:
     Properties:
       BucketName: !Ref CloudWatchQuickSight
 
+  SnsTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: !Ref AlarmTopic
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlarmEmail
+
+  Alarms:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      CodeUri: ./alarms
+      Description: 'Provision alarms'
+      MemorySize: 128
+      Timeout: 60
+      Policies:
+        - CloudWatchFullAccess
+      Environment:
+        Variables:
+          ACCOUNT_ID: {AWS::AccountId}
+          PROVISION_ALARMS: !Ref ProvisionAlarms
+          SNS_TOPIC_ARN: !Sub arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AlarmTopic}
+      Events:
+        MainInterval:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref AlarmConfigInterval
+
   Quotas:
     Type: 'AWS::Serverless::Function'
     Properties:
